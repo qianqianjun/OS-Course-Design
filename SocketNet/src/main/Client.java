@@ -13,22 +13,26 @@ public class Client
 	public static void main(String[] args)
 	{
 		try{
+			@SuppressWarnings("resource")
 			Scanner s=new Scanner(System.in);
 			System.out.println("请输入运算符，操作数1，操作数2，例如：* 2 3");
 			while(s.hasNext())
 			{
 				String operator =s.next();
 				if(operator.equals("exit"))
+				{
+					System.out.println("服务关闭，再见！");
 					break;
+				}	
 				int a=s.nextInt();
 				int b=s.nextInt();
+				@SuppressWarnings("resource")
 				Socket socket=new Socket("127.0.0.1",8888);
 				OutputStream os=socket.getOutputStream();
 				PrintWriter pw=new PrintWriter(os);
 				pw.write(operator+","+a+","+b);
 				pw.flush();
 				socket.shutdownOutput();
-				//get inputStream
 				InputStream is =socket.getInputStream();
 				BufferedReader br=new BufferedReader(new InputStreamReader(is));
 				String info=null;

@@ -1,53 +1,69 @@
 package WebQQ;
-
-import java.net.*;
-import java.io.*;
-import java.awt.event.*;
-import java.awt.*;
- 
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import java.awt.Font;
+import java.awt.TextArea;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 public class Client {
+	private static ReadThread readThread;
+	private static DataOutputStream dos;
     public static void main(String[] args) throws IOException{
 		@SuppressWarnings("resource")
-		Socket socket = new Socket("localhost", 5432);
-        DataInputStream dis = new DataInputStream(socket.getInputStream());
-        final DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-        Frame myframe = new Frame("Socket聊天室 power by 假装坏 冰语 公子小白");
-        Panel panelx = new Panel();
-        final TextField input = new TextField(35);
-        TextArea display = new TextArea(19, 35);
-        panelx.add(display);
-        panelx.add(input);
-        myframe.add(panelx);
-        new receiveThread(dis, display);    //创建启动接收消息的线程
+		Socket socket = new Socket("localhost", 6666);
+        dos = new DataOutputStream(socket.getOutputStream());
+        JFrame frame = new JFrame("聊天室by 假装坏 冰语 公子小白");
+        frame.setBounds(100, 100, 476, 657);
+        frame.setLayout(null);
+        JLabel label = new JLabel("聊天内容");
+		label.setFont(new Font("宋体", Font.PLAIN, 19));
+        TextField input = new TextField(40);
+        input.setBounds(26, 525, 295, 46);
+        input.setFont(new Font("宋体", Font.PLAIN, 25));
+        TextArea display = new TextArea(19, 40);
+        display.setBounds(26, 46, 405, 466);
+        display.setFont(new Font("黑体",Font.BOLD,25));
+        JButton submits = new JButton("提交");
+		submits.setBounds(335, 525, 96, 46);
+		frame.add(submits);
+        frame.add(input);
+        frame.add(display);
+        frame.add(label);
+        submits.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+                    dos.writeUTF(input.getText());
+                    input.setText("");
+                } catch (IOException e2) {}
+			}
+		});
         input.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
-                    dos.writeUTF(input.getText());    //发送数据
-                    input.setText("");  //清空输入框内容
-                } catch (IOException e2) {    }
+                    dos.writeUTF(input.getText());
+                    input.setText("");
+                } catch (IOException e2) {}
             }
         });
-         
-        myframe.setSize(350, 400);
-        myframe.setVisible(true);
+		frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosed(WindowEvent e) {
+				super.windowClosed(e);
+				readThread.interrupt();
+			}
+		});
+        frame.setVisible(true);
+        readThread =new ReadThread(new DataInputStream(socket.getInputStream()), display);
+        readThread.start();
     }
 }
- 
-//接收消息线程循环读取网络消息，显示在文本域
-class receiveThread extends Thread{
-    DataInputStream dis;
-    TextArea displayarea;
-    public receiveThread(DataInputStream dis, TextArea m){
-        this.dis = dis;
-        displayarea = m;
-        this.start();
-    }
-    public void run(){
-        for(;;){
-            try {
-                String str = dis.readUTF();   //读来自服务器的消息
-                displayarea.append(str + "\n");   //将消息添加到文本域显示
-            } catch (IOException e) {}
-        }
-    }
-}
+
